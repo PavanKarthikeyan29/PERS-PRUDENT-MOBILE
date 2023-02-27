@@ -1,5 +1,6 @@
 package com.coimbatorepublicschool.persprudent
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -7,19 +8,22 @@ import android.view.animation.*
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.blogspot.atifsoftwares.animatoolib.Animatoo.animateInAndOut
-import com.blogspot.atifsoftwares.animatoolib.Animatoo.animateShrink
-import com.blogspot.atifsoftwares.animatoolib.Animatoo.animateSlideRight
+import okhttp3.*
+import java.io.IOException
+import kotlin.reflect.typeOf
 
 
 class MainActivity : AppCompatActivity() {
+    var client = okhttp3.OkHttpClient()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        var imLogo:ImageView = findViewById(R.id.im_logo)
-        val aniFade: Animation = AnimationUtils.loadAnimation(applicationContext, android.R.anim.fade_out)
-        val tvQuote:TextView = findViewById(R.id.tv_quote)
-
+        var imLogo: ImageView = findViewById(R.id.im_logo)
+        val aniFade: Animation =
+            AnimationUtils.loadAnimation(applicationContext, android.R.anim.fade_out)
+        val tvQuote: TextView = findViewById(R.id.tv_quote)
+        val sharedPreference = getSharedPreferences("PREFERENCE_NAME", Context.MODE_PRIVATE)
+        val token = sharedPreference.getString("token", "defaultName")
         Handler().postDelayed(Runnable { tvQuote.setText("〝 ") }, 300)
         Handler().postDelayed(Runnable { tvQuote.append("S") }, 400)
         Handler().postDelayed(Runnable { tvQuote.append("a") }, 500)
@@ -60,11 +64,37 @@ class MainActivity : AppCompatActivity() {
         Handler().postDelayed(Runnable { tvQuote.append("e") }, 4100)
         Handler().postDelayed(Runnable { tvQuote.append(" 〞") }, 4100)
         Handler().postDelayed(Runnable {
-            val intent:Intent = Intent(applicationContext,LoginActivity::class.java)
-            startActivity(intent)
+            verify(token.toString())
+
         }, 5500)
     }
 
+    fun verify(token: String){
+        val body = RequestBody.create(null, byteArrayOf())
 
+        val request = Request.Builder()
+            .url(Constants.URL + "api/user/verify")
+            .method("POST", body)
+            .addHeader("token",token)
+            .build()
 
+        val call = client.newCall(request)
+        call.enqueue(
+            object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    // when failure
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    if (response.code.equals(200)){
+                        val intent: Intent = Intent(applicationContext, HomeActivity::class.java)
+                        startActivity(intent)
+                    }else{
+                        val intent: Intent = Intent(applicationContext, LoginActivity::class.java)
+                        startActivity(intent)
+                    }
+                }
+            }
+        )
+    }
 }
